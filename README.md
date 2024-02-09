@@ -1,6 +1,3 @@
-# SQL_database
-creating hospital database on SQL 
-
 
 # Hospital Management Database Project
 

@@ -1,0 +1,38 @@
+movie_id,title,budget,revenue,currency,unit
+101,"K.G.F: Chapter 2",1.00,12.50,INR,Billions
+102,"Doctor Strange in the Multiverse of Madness",200.00,954.80,USD,Millions
+103,"Thor: The Dark World ",165.00,644.80,USD,Millions
+104,"Thor: Ragnarok ",180.00,854.00,USD,Millions
+105,"Thor: Love and Thunder ",250.00,670.00,USD,Millions
+107,"Dilwale Dulhania Le Jayenge",400.00,2000.00,INR,Millions
+108,"3 Idiots",550.00,4000.00,INR,Millions
+109,"Kabhi Khushi Kabhie Gham",390.00,1360.00,INR,Millions
+110,"Bajirao Mastani ",1.40,3.50,INR,Billions
+111,"The Shawshank Redemption",25.00,73.30,USD,Millions
+113,Interstellar,165.00,701.80,USD,Millions
+115,"The Pursuit of Happyness",55.00,307.10,USD,Millions
+116,Gladiator,103.00,460.50,USD,Millions
+117,Titanic,200.00,2202.00,USD,Millions
+118,"It's a Wonderful Life",3.18,3.30,USD,Millions
+119,Avatar,237.00,2847.00,USD,Millions
+120,"The Godfather",7.20,291.00,USD,Millions
+121,"The Dark Knight",185.00,1006.00,USD,Millions
+122,"Schindler's List",22.00,322.20,USD,Millions
+123,"Jurassic Park",63.00,1046.00,USD,Millions
+124,Parasite,15.50,263.10,USD,Millions
+125,"Avengers: Endgame",400.00,2798.00,USD,Millions
+126,"Avengers: Infinity War",400.00,2048.00,USD,Millions
+127,"Pather Panchali",70000.00,100000.00,INR,Thousands
+128,"Taare Zameen Par",120.00,1350.00,INR,Millions
+129,"Munna Bhai M.B.B.S.",100.00,410.00,INR,Millions
+130,PK,850.00,8540.00,INR,Millions
+131,Sanju,1.00,5.90,INR,Billions
+132,"Pushpa: The Rise - Part 1",2.00,3.60,INR,Billions
+133,RRR,5.50,12.00,INR,Billions
+134,"Baahubali: The Beginning",1.80,6.50,INR,Billions
+135,"The Kashmir Files",250.00,3409.00,INR,Millions
+136,"Bajrangi Bhaijaan",900.00,11690.00,INR,Millions
+137,"Captain America: The First Avenger",216.70,370.60,USD,Millions
+138,"Captain America: The Winter Soldier",177.00,714.40,USD,Millions
+139,"Race 3",1.80,3.10,INR,Billions
+140,Shershaah,500.00,950.00,INR,Millions

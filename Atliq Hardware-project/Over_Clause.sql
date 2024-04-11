@@ -109,15 +109,15 @@ order by category)
 select * from cte1 where dens_rnk <= 2;
 
 
-#from student_ranks tagle get the rank and dense rank
+#From student_ranks tagle get the rank and dense rank
 select *,
 	row_number() over(order by marks desc) as row_num,
     rank() over(order by marks desc) as rank_num,
     dense_rank() over(order by marks desc) as dens_rnk
 from student_marks;
 
-
-
+select * from fact_gross_price
+where fiscal_year=2021;
 
 
 

@@ -10,9 +10,5 @@
 This project demonstrates SQL skills, from **beginner-level queries** to **advanced analytics**.  
 It covers **database creation, data manipulation, joins, subqueries, CTEs, and window functions** to analyze and report business insights.
 
----
 
-# 🟢 Beginner Section
-
-## 🚀 How to Run
 

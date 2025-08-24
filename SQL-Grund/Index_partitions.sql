@@ -37,3 +37,32 @@ WHERE Country ='USA' AND Score > 500
 CREATE INDEX idx_DBCustomers_CountryScore
 ON Sales.DBCustomers(Country, Score)
 
+--Columnstore index(for large data warehouse tables,improving performance of analytical queries)
+DROP INDEX [idx_DBCustomers_customerID] on Sales.DBCustomers;
+
+CREATE NONCLUSTERED COLUMNSTORE INDEX idx_DBCustomers_CS_FirstNAMe on sales.DBCustomers(FirstName)
+
+
+-----
+USE AdventureWorksDW2022;
+
+--HEAP structures
+
+SELECT * INTO FactInternetSales_HP 
+FROM FactInternetSales;
+
+--Row Stores
+SELECT * INTO FactInternetSales_RS
+FROM FactInternetSales;
+
+CREATE CLUSTERED INDEX idx_FactInternetSLaes_RS_PK
+ON FactInternetSales_RS(SalesOrdernumber, SalesOrderLineNumber)
+
+-----column Stores
+SELECT * INTO FactInternetSales_CS
+FROM FactInternetSales;
+
+CREATE CLUSTERED COLUMNSTORE INDEX idx_FactInternetSales_CS_PK
+ON FactInternetSales_CS
+
+--unique index

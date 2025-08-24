@@ -12,14 +12,14 @@ where Country ='USA';
 Use SalesDB;
 GO
 ---step2
-CREATE PROCEDURE GetCustomersSummary 
-as 
+ALTER PROCEDURE GetCustomersSummary 
+AS 
 BEGIN
 SELECT 
 	COUNT(*) totalCustomers,
 	AVG(Score) AVgScore
-from Sales.Customers
-where Country='USA'
+FROM Sales.Customers
+WHERE Country='USA'
 END
 
 ---step 3
@@ -90,3 +90,34 @@ EXEC GetCustomersSummary
 EXEC GetCustomersSummary @Country= 'USA'
 
 
+---triggers 
+---create alog table to log the changes
+use SalesDB;
+CREATE TABLE Sales.EmployeeLogs(
+	LogID INT PRIMARY KEY IDENTITY(1,1),
+	EmployeeID INT,
+	Logmessage NVARCHAR(255),
+	LogDate Date)
+GO
+
+Create TRIGGER trg_AfterInsertEmp on Sales.Employees 
+AFTER INSERT
+AS
+BEGIN
+	insert into sales.EmployeeLogs(EmployeeID, Logmessage, LogDate)
+	SELECT
+		EmployeeID,
+		'New Employee Added =' + cast(EmployeeID as varchar),
+		GETDATE()
+	from inserted
+END
+
+
+SELECT * from Sales.EmployeeLogs;
+
+INSERT INTO Sales.Employees
+VALUES
+(6,'Maris','Bolly','HR','1998-01-12','F',8000,3)
+
+
+	

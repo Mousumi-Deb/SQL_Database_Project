@@ -7,10 +7,13 @@ SELECT
 	COUNT(*) TOTAL_Customers,
 	AVG(Score) AvgScores
 from Sales.Customers
-where Country ='USA'
+where Country ='USA';
 
+Use SalesDB;
+GO
 ---step2
-CREATE PROCEDURE GetCustomersSummary as 
+CREATE PROCEDURE GetCustomersSummary 
+as 
 BEGIN
 SELECT 
 	COUNT(*) totalCustomers,
@@ -24,7 +27,7 @@ EXEC GetCustomersSummary
 
 ---parameters
 --For german Customers find the total number and average 
-
+GO
 Alter PROCEDURE GetCustomersSummary @Country NVARCHAR(50)= 'USA'
 AS 
 BEGIN
@@ -45,11 +48,10 @@ BEGIN
 		else
 		begin
 			print('No Null Scores Found')
-		end;
-
-		--=================================
-		-- step 2:Generating the summary reports
-		--=====================================
+	end;
+	--=================================
+	-- step 2:Generating the summary reports
+	--=====================================
 		--- Calculate total customer and average for specific country
 
 		Select
@@ -70,8 +72,8 @@ BEGIN
 		Join Sales.Customers c
 		On c.CustomerID =o.CustomerID
 		where c.Country = @Country;
-	END try
-	Begin Catch
+	END TRY
+	BEGIN CATCH
 		----==============================
 		--Error handling
 		--=============================
@@ -80,9 +82,9 @@ BEGIN
 		print('Error Number: '+ Cast(error_number() as Nvarchar));
 		print('Error Line: '+ cast(Error_line() as nvarchar));
 		print('Error procedure ' +Error_Procedure());
-	End Catch
-	end
-go
+	END CATCH
+END
+GO
 
 EXEC GetCustomersSummary 
 EXEC GetCustomersSummary @Country= 'USA'

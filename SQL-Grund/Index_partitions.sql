@@ -159,4 +159,97 @@ sp.modification_counter desc;
 UPDATE STATISTICS Sales.DBCustomers _WA_Sys_00000001_6EF57B66;
 
 UPDATE STATISTICS Sales.DBCustomers;
+-------------------------------------------------------------------------------------
 
+
+--- SQL Partitioning
+
+CREATE PARTITION FUNCTION PartitionByYear (Date)
+AS RANGE LEFT FOR VALUES ('2023-12-31','2024-12-31','2025-12-31')
+
+---query lists all existing partiotion Function
+
+SELECT 
+    name,
+    function_id,
+    type,
+    type_desc,
+    boundary_value_on_right
+from sys.partition_functions
+
+---step 2: create FILE Groups
+ALTER DATABASE SalesDB add FILEGROUP FG_2023;
+ALTER DATABASE SalesDB add FILEGROUP FG_2024;
+ALTER DATABASE SalesDB add FILEGROUP FG_2025;
+ALTER DATABASE SalesDB add FILEGROUP FG_2026;
+
+--- query lists all exsting Filegroups
+
+SELECT * From sys.filegroups
+WHERE [type] = 'FG'
+
+--step 3: add. ndf Files to Each fiels
+ALTER DATABASE SalesDB ADD FILE
+(
+    NAME = p_2023,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\p_2023.ndf'
+) TO FILEGROUP FG_2023;
+
+ALTER DATABASE SalesDB ADD FILE
+(
+    NAME = p_2024,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\p_2024.ndf'
+) TO FILEGROUP FG_2024;
+
+
+ALTER DATABASE SalesDB ADD FILE
+(
+    NAME = p_2025,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\p_2025.ndf'
+) TO FILEGROUP FG_2025;
+
+ALTER DATABASE SalesDB ADD FILE
+(
+    NAME = p_2026,
+    FILENAME = 'C:\Program Files\Microsoft SQL Server\MSSQL16.SQLEXPRESS\MSSQL\DATA\p_2026.ndf'
+) TO FILEGROUP FG_2026;
+
+
+-----query file group
+SELECT 
+    fg.name as FileGroupName,
+    mf.name as LogicalFileName,
+    mf.physical_name as PhysicalFilePath,
+    mf.size / 128 as SizeInMB
+FROM 
+    sys.filegroups fg
+JOIN 
+    sys.master_files mf 
+On 
+    fg.data_space_id = mf.data_space_id
+WHERE 
+    mf.database_id = DB_ID('SalesDB');
+
+
+----- step 4: cerate partition Scheme
+
+CREATE PARTITION Scheme SchemePartitionByYear
+as PARTITION PartitionByYear 
+TO (FG_2023, FG_2024, FG_2025, FG_2026)
+
+
+--- query all partition scheme
+
+SELECT
+    ps.name as PartitionSchemeName,
+    pf.name as PartitonFunctionName,
+    ds.destination_id as PartitionNumber,
+    fg.name as FileGroupName
+From sys.partition_schemes ps
+ 
+JOIN sys.partition_functions pf 
+    on ps.function_id =pf.function_id
+JOIN sys.destination_data_spaces ds 
+    On ps.data_space_id =ds.partition_scheme_id
+JOIN sys.filegroups fg 
+    ON ds.data_space_id = fg.data_space_id

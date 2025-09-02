@@ -246,10 +246,27 @@ SELECT
     ds.destination_id as PartitionNumber,
     fg.name as FileGroupName
 From sys.partition_schemes ps
- 
+
 JOIN sys.partition_functions pf 
     on ps.function_id =pf.function_id
 JOIN sys.destination_data_spaces ds 
     On ps.data_space_id =ds.partition_scheme_id
 JOIN sys.filegroups fg 
     ON ds.data_space_id = fg.data_space_id
+
+
+--- step 5: Create teh partitioned Table
+CREATE TABLE Sales.Orders_Partitioned
+(
+    OrderID INT,
+    OrderDate Date,
+    Sales INT
+)
+On SchemePartitionByYear (OrderDate)
+
+
+--step 6: insert data into Partiton Table
+Insert Into Sales.Orders_Partitioned VALUES
+(1,'2023-05-15', 100);
+
+SELECT * from Sales.Orders_Partitioned

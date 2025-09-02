@@ -3,7 +3,8 @@
 */
 --crate a clustered indesx
 --
-use SalesDB
+use SalesDB;
+DROP TABLE IF EXISTS Sales.DBCustomers;
 select * into Sales.DBCustomers from Sales.Customers;
 
 CREATE CLUSTERED INDEX idx_DBCustomers_customerID
@@ -46,23 +47,40 @@ CREATE NONCLUSTERED COLUMNSTORE INDEX idx_DBCustomers_CS_FirstNAMe on sales.DBCu
 -----
 USE AdventureWorksDW2022;
 
---HEAP structures
+DROP TABLE IF EXISTS dbo.FactInternetSales ;
+
+--HEAP structures (It is a table without a clustered index)
 
 SELECT * INTO FactInternetSales_HP 
 FROM FactInternetSales;
 
---Row Stores
+--Row Stores (It is a table with a clustered index)
 SELECT * INTO FactInternetSales_RS
 FROM FactInternetSales;
 
 CREATE CLUSTERED INDEX idx_FactInternetSLaes_RS_PK
 ON FactInternetSales_RS(SalesOrdernumber, SalesOrderLineNumber)
 
------column Stores
+-----column Stores (It is a table with a clustered columnstore index)
 SELECT * INTO FactInternetSales_CS
 FROM FactInternetSales;
 
 CREATE CLUSTERED COLUMNSTORE INDEX idx_FactInternetSales_CS_PK
 ON FactInternetSales_CS
 
---unique index
+--unique index ( Ensure no duplicates values exists in specific column)
+create UNIQUE NONCLUSTERED index idx_Products_products  
+on Sales.Products (Product)
+
+
+--- Filter index
+Use SalesDB;
+SELECT *
+FROM Sales.Customers 
+WHERE Country = 'USA'
+
+CREATE NONCLUSTERED INDEX idx_DBCustomers_Country
+ON Sales.Customers (Country)
+WHERE Country = 'USA'
+
+---

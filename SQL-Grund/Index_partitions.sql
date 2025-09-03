@@ -256,6 +256,9 @@ JOIN sys.filegroups fg
 
 
 --- step 5: Create teh partitioned Table
+
+USE SalesDB;
+DROP TABLE IF EXISTS Sales.Orders_Partitioned;
 CREATE TABLE Sales.Orders_Partitioned
 (
     OrderID INT,
@@ -266,7 +269,70 @@ On SchemePartitionByYear (OrderDate)
 
 
 --step 6: insert data into Partiton Table
+
 Insert Into Sales.Orders_Partitioned VALUES
 (1,'2023-05-15', 100);
+Insert Into Sales.Orders_Partitioned VALUES
+(2,'2024-07-20', 50);
+Insert Into Sales.Orders_Partitioned VALUES
+(3,'2025-12-31', 20);
+Insert Into Sales.Orders_Partitioned VALUES
+(4,'2026-01-01', 100);
 
 SELECT * from Sales.Orders_Partitioned
+
+---query for partitioning
+
+SELECT
+    p.partition_number as PartitionNumber,
+    f.name as PartitionFilegroup,
+    p.rows as NumberOfRows
+FROM sys.partitions p
+JOIN sys.destination_data_spaces dds 
+    ON p.partition_number = dds.destination_id
+JOIN sys.filegroups f 
+    On dds.data_space_id = f.data_space_id 
+where OBJECT_NAME(p.object_id) = 'Orders_Partitioned';
+
+---Partitions performences
+
+SELECT *
+INTO Sales.Orders_Nopartiton
+FROM Sales.Orders_Partitioned
+
+SELECT *
+from Sales.Orders_Nopartiton
+WHERE OrderDate = '2026-01-01'
+
+SELECT *
+from Sales.Orders_Partitioned
+WHERE OrderDate = '2026-01-01'
+
+
+--- Join 
+select o.OrderID, o.Sales 
+from Sales.Orders o  
+INNER JOIN Sales.Customers c  
+ON o.CustomerID = c.CustomerID
+WHERE c.Country ='Usa'
+
+---exists
+select o.OrderID, o.Sales 
+from Sales.Orders o 
+where exists ( 
+    select 1
+    FROM Sales.Customers c  
+    WHERE c.CustomerID = o.CustomerID
+    AND c.Country ='USA'
+)
+
+--- In
+select o.OrderID, o.Sales 
+from Sales.Orders o 
+WHERE o.CustomerID IN (
+    select CustomerID
+    FROM Sales.Customers
+    WHERE Country ='USA'
+)
+
+--Task

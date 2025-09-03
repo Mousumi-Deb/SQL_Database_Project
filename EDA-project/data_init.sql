@@ -1,0 +1,110 @@
+USE DataWarehouseAnalytics;
+GO
+
+--explore all obejcts in the datasbase
+SELECT * FROM INFORMATION_SCHEMA.TABLES;
+
+--explore all columns in teh database
+SELECT * FROM INFORMATION_SCHEMA.COLUMNS
+where TABLE_NAME = 'dim_customers';
+
+---Dimensions Explorations
+SELECT distinct country 
+from gold.dim_customers
+
+--explore all the categories 'The major Divisions'
+SELECT distinct category ,subcategory, product_name
+from gold.dim_products
+ORDER BY 1,2,3
+
+--- explore teh date columns identify teh earliest and lastest dates
+--task : find the date of the first and last order
+SELECT
+    MIN(order_date) as first_order_date,
+    MAX(order_date) as last_order_date,
+    DATEDIFF(month, MIN(order_date),MAX(order_date)) as order_range_months
+from gold.fact_sales
+
+--- find the youngest and oldest customers
+SELECT 
+    MIN(birthdate) as oldest_birthdate,
+    DATEDIFF(YEAR, MIN(birthdate), GETDATE()) as ordest_age,
+    MAX(birthdate) as youngest_birthdate,
+    DATEDIFF(YEAR, MAX(birthdate), GETDATE()) as youest_age,
+    DATEDIFF(YEAR, MIN(birthdate), MAX(birthdate)) as year_differ
+from gold.dim_customers
+
+---measure (calculate tthe key metrics of te business)
+---find teh total sales
+SELECT SUM(sales_amount) as total_sales
+from gold.fact_sales
+
+--show how many items are being sold
+SELECT sum(quantity) as total_quantity
+from gold.fact_sales
+
+-- find the average selling price
+SELECT AVG(price) as average_sales
+from gold.fact_sales
+
+--find the total number of the orders
+SELECT COUNT(order_number) as total_orders
+from gold.fact_sales
+
+SELECT count(DISTINCT order_number) as distict_orders_num
+from gold.fact_sales
+
+SELECT * from gold.fact_sales
+
+-- find the total number of products
+SELECT count(product_key) as total_products
+from gold.dim_products
+
+-- find the total number of customers
+SELECT COUNT(customer_key) as total_customers_num
+from gold.dim_customers
+
+--find the total number of customers taht has placed an order
+SELECT COUNT(distinct customer_key) as total_customers_num
+from gold.fact_sales
+
+-- GENERATE REPORT THAT SHOWS ALL KEY METRICS OF THE BUSINESS
+SELECT 
+    'total sales' as measure_name, 
+    SUM(sales_amount) as meassure_value 
+from gold.fact_sales
+
+UNION ALL
+
+SELECT 
+    'total Quantity' as measure_name, 
+    SUM(quantity) as meassure_value 
+from gold.fact_sales
+
+UNION ALL
+
+SELECT 
+    'avg price' as measure_name, 
+    AVG(price) as meassure_value 
+from gold.fact_sales
+
+UNION ALL
+
+SELECT 
+    'total num orders' as measure_name, 
+    COUNT(distinct order_number) as meassure_value 
+from gold.fact_sales
+
+UNION ALL
+
+SELECT 
+    'total num product' as measure_name, 
+    COUNT(product_key) as meassure_value 
+from gold.dim_products
+UNION ALL
+
+SELECT 
+    'total num customers' as measure_name, 
+    COUNT(customer_key) as meassure_value 
+from gold.dim_customers
+

@@ -133,3 +133,61 @@ SELECT
     CONCAT(ROUND((CAST(total_sales as float) / sum(total_sales) over ())*100,2),'%') as percent_of_total
     from category_sales
     ORDER BY total_sales DESC
+
+--- data segmentation (group the data based on the specific range)
+--task1: segment products into cost ranges and count how many products fall into each segment
+With product_segment as (
+SELECT
+    product_key,
+    product_name,
+    cost,
+    case when cost < 100 then 'Below 100'
+        when cost between 100 and 500 THEN '100-500'
+        when cost between 500 and 1000 THEN '500-1000'
+        else 'Above 1000'
+    End cost_range
+FROM gold.dim_products )
+
+SELECT
+    cost_range,
+    COUNT(product_key) as total_products
+FROM product_segment
+GROUP BY cost_range
+ORDER BY total_products DESC
+
+
+/* group customers into three segments based on their spendings behavior:
+-VIP: Customers with at least 12 months of history and spendings more than $5000.
+- regular: custoers with at least 12 months of history but spending  $5000 or less.
+-- new: Customers with a life span less than 12 months.
+and find the total number of the customers by each group 
+*/
+with customer_spending as (
+    SELECT
+        c.customer_key,
+        SUM(f.sales_amount) as total_spendings,
+        MIN(order_date) as first_order,
+        MAX(order_date) as last_orders,
+        DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) as lifespan
+    FROM gold.fact_sales f  
+    LEFT JOIN gold.dim_customers c  
+    on f.customer_key = c.customer_key
+    group by c.customer_key)
+
+SELECT 
+    customer_segment,
+    COUNT(customer_key) as total_customers 
+    FROM (
+        SELECT
+            customer_key,
+            case when lifespan >= 12 and total_spendings > 5000 then 'VIP'
+                when lifespan >= 12 and total_spendings <= 5000 then 'Regular'
+                else 'New'
+            END customer_segment
+        FROM customer_spending) t 
+    GROUP BY customer_segment
+    ORDER BY total_customers desc
+
+
+------------ Build Customers Report--------------
+

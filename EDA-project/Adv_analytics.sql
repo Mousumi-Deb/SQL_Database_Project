@@ -296,3 +296,143 @@ select
 from gold.report_customers
 GROUP BY age_group 
 ORDER BY age_group DESC;
+
+
+/*------=====================================================================================
+                    Product Performance Report
+===========================================================================================
+Purpose:
+    -the report consolidateskey prodtcs metrics and behavioral insights
+
+Highlights:
+    1. gathers essential product details such as names, categories,subcategories, and costs
+    2. segments products by revenue to identify high, mid and low performers
+    3. aggregates product-level metrics:
+        -total sales
+        -total orders
+        -total quantity sold
+        -total customers (Unique)
+        -lifespan (in months)
+    4. calculates valuable KPIs:
+        -recency (months since last sale)
+        -average order revenue
+        -average monthly revenues
+======================================================================================== */
+GO
+CREATE VIEW gold.report_products AS
+WITH base_query AS (
+-- 1. gathers essential product details such as names, categories,subcategories, and costs
+SELECT
+    f.order_number,
+    f.customer_key,
+    f.order_date,
+    f.sales_amount,
+    f.quantity,
+    p.product_key,
+    p.product_name,
+    p.category,
+    p.subcategory,
+    p.cost
+from gold.fact_sales f
+LEFT JOIN gold.dim_products p
+    ON p.product_key = f.product_key
+WHERE order_date is NOT NULL  ----only consider valid sales dates
+),  
+
+product_aggregation AS (
+/* 2. product aggregation: summarizes key metrics at the product level
+---------------------------------------------------------------*/
+SELECT
+    product_key,
+    product_name,
+    category,
+    subcategory,
+    cost,
+    DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) as lifespan , 
+    MAX(order_date) as last_sale_date,
+    COUNT(DISTINCT customer_key) as total_customers,
+    COUNT(DISTINCT order_number) as total_orders,
+    SUM(sales_amount) as total_sales,
+    SUM(quantity) as total_quantity,
+    ROUND(AVG(CAST(sales_amount as float)/NULLIF(quantity,0)),2) as avg_selling_price
+FROM base_query
+GROUP BY
+    product_key,
+    product_name,
+    category,
+    subcategory,
+    cost)
+--- 3.Final query: Combines all products results into one output 
+SELECT
+    product_key,    
+    product_name,
+    category,
+    subcategory,
+    cost,
+    last_sale_date,
+    --compute recency of last sale date
+    DATEDIFF(MONTH, last_sale_date, GETDATE()) as recency_in_months,
+    --- 2.segments products by revenue to identify high, mid and low performers
+    CASE 
+        when total_sales > 50000 then 'High Performer'
+        when total_sales >= 10000 then 'Mid Performer'
+        else 'Low Performer'
+    END as revenue_segment,
+    lifespan,
+    total_orders,
+    total_sales,
+    total_quantity,
+    total_customers,
+    avg_selling_price,
+
+    ---compute avg order revenue
+    case when total_orders = 0 then 0
+        else total_sales / total_orders 
+    end as avg_order_revenue,
+
+    ---compute avg monthly revenues
+    case when lifespan = 0 then total_sales
+        else total_sales / lifespan 
+    end as avg_monthly_revenues
+from product_aggregation;
+GO;
+
+--- get the distribution of products by revenue segment
+select
+    revenue_segment,
+    COUNT(product_key) as total_products,
+    SUM(total_sales) as total_sales,
+    AVG(avg_order_revenue) as avg_order_revenue
+from gold.report_products
+GROUP BY revenue_segment
+ORDER BY revenue_segment DESC;
+
+/* group customers into three segments based on their spendings behavior:
+-VIP: Customers with at least 12 months of history and spendings more than $500
+- regular: custoers with at least 12 months of history but spending  $5000 or less.
+-- new: Customers with a life span less than 12 months.
+and find the total number of the customers by each group 
+*/
+with customer_spending as (
+    SELECT
+        c.customer_key,
+        SUM(f.sales_amount) as total_spendings,
+        MIN(order_date) as first_order,
+        MAX(order_date) as last_orders,
+        DATEDIFF(MONTH, MIN(order_date), MAX(order_date)) as lifespan
+    FROM gold.fact_sales f  
+    LEFT JOIN gold.dim_customers c  
+    on f.customer_key = c.customer_key
+    group by c.customer_key)
+SELECT
+    customer_segment,
+    COUNT(customer_key) as total_customers 
+    FROM (
+        SELECT
+            customer_key,
+            case when lifespan >= 12 and total_spendings > 5000 then 'VIP'
+                when lifespan >= 12 and total_spendings <= 5000 then 'Regular'
+                else 'New'
+            END customer_segment
+        FROM customer_spending) t 
+    GROUP BY customer_segment

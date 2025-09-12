@@ -318,6 +318,7 @@ Highlights:
         -average order revenue
         -average monthly revenues
 ======================================================================================== */
+
 GO
 CREATE VIEW gold.report_products AS
 WITH base_query AS (
@@ -377,7 +378,7 @@ SELECT
         when total_sales > 50000 then 'High Performer'
         when total_sales >= 10000 then 'Mid Performer'
         else 'Low Performer'
-    END as revenue_segment,
+    END as product_segment,
     lifespan,
     total_orders,
     total_sales,
@@ -397,15 +398,16 @@ SELECT
 from product_aggregation;
 GO;
 
+SELECT * from gold.report_products;
 --- get the distribution of products by revenue segment
 select
-    revenue_segment,
+    product_segment,
     COUNT(product_key) as total_products,
     SUM(total_sales) as total_sales,
     AVG(avg_order_revenue) as avg_order_revenue
 from gold.report_products
-GROUP BY revenue_segment
-ORDER BY revenue_segment DESC;
+GROUP BY product_segment
+ORDER BY product_segment DESC;
 
 /* group customers into three segments based on their spendings behavior:
 -VIP: Customers with at least 12 months of history and spendings more than $500

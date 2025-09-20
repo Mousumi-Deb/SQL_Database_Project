@@ -1,6 +1,6 @@
 
 /*===============================================================================
-Stored Procedure: Load Bronze Layer (Source -> Bronze)
+Stored Procedure: Load bronze Layer (Source -> bronze)
 ===============================================================================
 Script Purpose:
     This stored procedure loads data into the 'bronze' schema from external CSV files. 
@@ -20,13 +20,13 @@ Usage Example:
 use DataWarehouse;
 GO
 
-CREATE OR ALTER PROCEDURE Bronze.load_bronze AS
+CREATE OR ALTER PROCEDURE bronze.load_bronze AS
 BEGIN
     DECLARE @start_time DATETIME, @end_time DATETIME, @batch_start_time DATETIME, @batch_end_time DATETIME; 
     BEGIN TRY
         SET @batch_start_time = GETDATE();
         PRINT '================================================';
-        PRINT 'Loading Bronze Layer';
+        PRINT 'Loading bronze Layer';
         PRINT '================================================';
 
         PRINT '------------------------------------------------';
@@ -34,11 +34,11 @@ BEGIN
         PRINT '------------------------------------------------';
 
         PRINT '>> Truncating Table: bronze.crm_cust_info';
-        TRUNCATE TABLE Bronze.crm_cust_info;
+        TRUNCATE TABLE bronze.crm_cust_info;
         PRINT '>> Truncating Data Into: bronze.crm_cust_info';
 
         SET @start_time = GETDATE();
-        BULK INSERT Bronze.crm_cust_info
+        BULK INSERT bronze.crm_cust_info
         FROM 'C:\Users\mousu\Projects\sql-ultimate-course\SQL-MRD\DWH Project\datasets\source_crm\cust_info.csv'
 
         WITH (
@@ -53,10 +53,10 @@ BEGIN
 
         SET @start_time = GETDATE();
         PRINT '>> Truncating Table: bronze.crm_cust_info';
-        TRUNCATE TABLE Bronze.crm_prd_info;
+        TRUNCATE TABLE bronze.crm_prd_info;
         PRINT '>> Inserting Data Into: bronze.crm_prd_info';
 
-        BULK INSERT Bronze.crm_prd_info
+        BULK INSERT bronze.crm_prd_info
         FROM 'C:\Users\mousu\Projects\sql-ultimate-course\SQL-MRD\DWH Project\datasets\source_crm\prd_info.csv'
         WITH (
             FIRSTROW = 2,
@@ -70,10 +70,10 @@ BEGIN
 
         SET @start_time = GETDATE();        
         PRINT '>> Truncating Table: bronze.crm_sales_details'
-        TRUNCATE TABLE Bronze.crm_sales_details;
+        TRUNCATE TABLE bronze.crm_sales_details;
         PRINT '>> Inserting Data Into: bronze.crm_sales_details';
 
-        BULK INSERT Bronze.crm_sales_details
+        BULK INSERT bronze.crm_sales_details
         FROM 'C:\Users\mousu\Projects\sql-ultimate-course\SQL-MRD\DWH Project\datasets\source_crm\sales_details.csv'
         WITH (
             FIRSTROW = 2,
@@ -91,10 +91,10 @@ BEGIN
 
         SET @start_time = GETDATE();
         PRINT '>> Truncating Table: bronze.erp_cust_az12';
-        TRUNCATE TABLE Bronze.erp_cust_az12;
+        TRUNCATE TABLE bronze.erp_cust_az12;
         PRINT '>> Inserting Data Into: bronze.erp_cust_az12';
 
-        BULK INSERT Bronze.erp_cust_az12
+        BULK INSERT bronze.erp_cust_az12
         FROM 'C:\Users\mousu\Projects\sql-ultimate-course\SQL-MRD\DWH Project\datasets\source_erp\CUST_AZ12.csv'
         WITH (
             FIRSTROW = 2,
@@ -107,10 +107,10 @@ BEGIN
 
         SET @start_time = GETDATE();
         PRINT '>> Truncating Table: bronze.erp_loc_a101';
-        TRUNCATE TABLE Bronze.erp_loc_a101;
+        TRUNCATE TABLE bronze.erp_loc_a101;
         PRINT '>> Inserting Data Into: bronze.erp_loc_a101';
 
-        BULK INSERT Bronze.erp_loc_a101
+        BULK INSERT bronze.erp_loc_a101
         FROM 'C:\Users\mousu\Projects\sql-ultimate-course\SQL-MRD\DWH Project\datasets\source_erp\LOC_A101.csv'
         WITH (
             FIRSTROW = 2,
@@ -123,7 +123,7 @@ BEGIN
 
         SET @start_time = GETDATE();
         PRINT '>> Truncating Table: bronze.erp_px_cat_g1v2';
-        TRUNCATE TABLE Bronze.erp_px_cat_g1v2;
+        TRUNCATE TABLE bronze.erp_px_cat_g1v2;
         PRINT '>> Inserting Data Into: bronze.erp_px_cat_g1v2';
     
         BULK INSERT bronze.erp_px_cat_g1v2
@@ -136,17 +136,17 @@ BEGIN
         SET @end_time = GETDATE();
         PRINT '>> Load Duration: ' + CAST(DATEDIFF(second, @start_time, @end_time) AS NVARCHAR) + ' seconds';
         PRINT '>> -------------';
----- Calculate the duration of loading the entire Bronze layer
+---- Calculate the duration of loading the entire bronze layer
         SET @batch_end_time = GETDATE();
         PRINT '=========================================='
-        PRINT 'Loading Bronze Layer is Completed';
+        PRINT 'Loading bronze Layer is Completed';
         PRINT '   - Total Load Duration: ' + CAST(DATEDIFF(SECOND, @batch_start_time, @batch_end_time) AS NVARCHAR) + ' seconds';
         PRINT '=========================================='
     END TRY
 --- Catch any errors that occur during the execution of the procedure
     BEGIN CATCH
         PRINT '=========================================='
-        PRINT 'ERROR OCCURED DURING LOADING BRONZE LAYER'
+        PRINT 'ERROR OCCURED DURING LOADING bronze LAYER'
         PRINT 'Error Message' + ERROR_MESSAGE();
         PRINT 'Error Message' + CAST (ERROR_NUMBER() AS NVARCHAR);
         PRINT 'Error Message' + CAST (ERROR_STATE() AS NVARCHAR);
@@ -155,6 +155,4 @@ BEGIN
 END
 GO
 
--- Verify data load
-EXEC Bronze.load_bronze;
-GO
+

@@ -84,3 +84,132 @@ WHERE prd_end_dt IS NOT NULL AND prd_end_dt < prd_start_dt
 
 --- FINAL CHECK
 SELECT * from silver.crm_prd_info
+
+
+--=============================Lets work with silver.crm_sales_details table================================
+/*-----------------data quality check-(before inserting data into silver sales details table)------------------
+
+select 
+    sls_ord_num,
+    sls_prd_key,
+    sls_cust_id,
+    sls_order_dt,
+    sls_ship_dt,
+    sls_due_dt,
+    sls_sales,
+    sls_quantity,
+    sls_price
+from bronze.crm_sales_details
+
+
+---check the invalid date orders
+SELECT 
+    nullif(sls_order_dt,0) as sls_order_dt
+from bronze.crm_sales_details
+where sls_order_dt <= 0 
+OR Len(sls_order_dt) != 8
+OR sls_order_dt > 20500101
+OR sls_order_dt < 19000101
+
+---check the invalid ship date
+select distinct
+sls_sales,
+sls_quantity,
+sls_price
+from bronze.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+---- transformation option of 3 columns (sls_sales, sls_quantity, sls_price)    
+
+select distinct
+sls_sales as old_sls_sales,
+sls_quantity,
+sls_price as old_sls_price,
+CASE 
+    When sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * ABS(sls_price) 
+        THEN sls_quantity * ABS(sls_price)
+        ELSE sls_sales
+    END AS sls_sales,
+CASE
+    when sls_price is null or sls_price <= 0
+        THEN sls_sales / NULLIF(sls_quantity, 0)
+        ELSE sls_price
+    END AS sls_price
+from bronze.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+*/
+--- INsert data into silver.crm_sales_details table with necessary transformations
+INSERT INTO silver.crm_sales_details (
+    sls_ord_num,
+    sls_prd_key,
+    sls_cust_id,
+    sls_order_dt,
+    sls_ship_dt,
+    sls_due_dt,
+    sls_sales,
+    sls_quantity,
+    sls_price)
+
+select 
+    sls_ord_num,
+    sls_prd_key,
+    sls_cust_id,
+    CASE 
+        WHEN sls_order_dt = 0 OR LEN(sls_order_dt) != 8 THEN NULL
+        ELSE CAST(CAST(sls_order_dt AS VARCHAR) AS DATE)
+    END AS sls_order_dt,
+  
+    CASE 
+        WHEN sls_ship_dt = 0 OR LEN(sls_ship_dt) != 8 THEN NULL
+        ELSE CAST(CAST(sls_ship_dt AS VARCHAR) AS DATE)
+    END AS sls_ship_dt,
+
+    CASE
+        WHEN sls_due_dt = 0 OR LEN(sls_due_dt) != 8 THEN NULL
+        ELSE CAST(CAST(sls_due_dt AS VARCHAR) AS DATE)
+    END AS sls_due_dt,
+
+    CASE 
+        When sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * ABS(sls_price) 
+					THEN sls_quantity * ABS(sls_price)
+				ELSE sls_sales
+        END AS sls_sales,
+    sls_quantity,
+    CASE 
+        WHEN sls_price IS NULL OR sls_price <= 0 
+            THEN sls_sales / NULLIF(sls_quantity, 0)
+        ELSE sls_price  -- Derive price if original value is invalid
+    END AS sls_price
+
+from bronze.crm_sales_details
+
+
+
+--============== Recheck silver.crm_sales_details table for data quality issues
+---check the invalid date orders
+SELECT * FROM
+silver.crm_sales_details
+WHERE sls_order_dt > sls_ship_dt OR sls_order_dt > sls_due_dt
+
+
+---check the invalid ship date
+select distinct
+sls_sales,
+sls_quantity,
+sls_price
+from silver.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+
+--- FINAL CHECK
+SELECT * from silver.crm_sales_details

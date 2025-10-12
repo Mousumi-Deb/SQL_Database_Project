@@ -16,7 +16,7 @@ HAVING COUNT(*) > 1 OR cst_id IS NULL;
 SELECT * from bronze.crm_cust_info
 WHERE cst_id = 29466
 
---- check for rownumber functon 
+--- check for rownumber functon or remove any duplicates 
 SELECT
 *
 FROM (
@@ -52,6 +52,9 @@ SELECT DISTINCT cst_gndr from bronze.crm_cust_info;
 ---transformation and then insert data into silver table
 use Datawarehouse;
 GO
+-- want to drop IF EXISTS
+
+
 
 INSERT into silver.crm_cust_info (
     cst_id,
@@ -60,8 +63,7 @@ INSERT into silver.crm_cust_info (
     cst_lastname,
     cst_marital_status,
     cst_gndr,
-    cst_create_date
-)
+    cst_create_date)
 SELECT
     cst_id,
     cst_key,
@@ -71,18 +73,18 @@ SELECT
         when UPPER(TRIM(cst_marital_status)) = 'M' then 'Married'
         when UPPER(TRIM(cst_marital_status)) = 'S' then 'Single'
         Else 'N/A'
-    end AS cst_marital_status,
-    case 
+    END AS cst_marital_status,
+    CASE 
         when UPPER(TRIM(cst_gndr)) = 'M' then 'Male'
         when UPPER(TRIM(cst_gndr)) = 'F' then 'Female'
         Else 'N/A'
-    end AS cst_gndr,
+    END AS cst_gndr,
     cst_create_date
 FROM (
     SELECT 
     *,
     ROW_NUMBER() OVER (PARTITION BY cst_id ORDER BY cst_create_date DESC) AS flag_last
-    from bronze.crm_cust_info) t 
+    from bronze.crm_cust_info where cst_id IS NOT NULL) t 
     WHERE flag_last = 1;
 
 ---check the data in silver table
@@ -92,12 +94,17 @@ SELECT * from silver.crm_cust_info;
 SELECT
     cst_id,
     COUNT(*)
-from silver.crm_cust_info
-GROUP BY cst_id
+FROM silver.crm_cust_info
+group by cst_id
 HAVING COUNT(*) > 1 OR cst_id IS NULL;
 
 ---checks first name
 SELECT cst_firstname 
 from silver.crm_cust_info
 WHERE cst_firstname != TRIM(cst_firstname)
+
+---checks first name
+SELECT cst_lastname 
+from silver.crm_cust_info
+WHERE cst_lastname != TRIM(cst_lastname)
 

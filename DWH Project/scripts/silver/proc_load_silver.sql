@@ -122,19 +122,45 @@ from bronze.crm_sales_details;
 
 --=======================================================================================================
 -------------------lets work with ERP data table
-
-
+INSERT INTO silver.erp_cust_az12 (cid, bdate, gen)
 SELECT 
 CASE 
-    WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))
+    WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))       -- remove 'NAS' prefix if exists
     ELSE cid
 END AS cid,
-bdate,
 CASE 
     WHEN bdate > GETDATE() THEN NULL
-ELSE bdate
-END AS bdate,
-gen
+    ELSE bdate
+END AS bdate,       ---set future birth dates to null
+CASE 
+    WHEN UPPER(TRIM(gen)) In ('M', 'MALE') Then 'Male'
+    WHEN UPPER(TRIM(gen)) In ('F', 'FEMALE') Then 'Female'
+    ELSE 'n/a'
+END AS gen          ---normalize the gender values and handle unknown cases 
 from bronze.erp_cust_az12
 
+--============================================================================
+-----ERp location table
+Insert into silver.erp_loc_a101 (cid, cntry)
+SELECT 
+REPLACE(cid, '-', '') cid,
+Case 
+    when TRIM(cntry) = 'DE' THEN 'Germany'
+    when TRIM(cntry) IN ('US','USA') then 'United States'
+    when TRIM(cntry) = '' OR cntry is NULL THEN 'n/a'
+    ELSE TRIM(cntry)
+END AS cntry
 
+from bronze.erp_loc_a101
+
+
+----insert data into silver erp product category table
+
+INSERT into silver.erp_px_cat_g1v2 
+(id,cat,subcat, maintenance)
+SELECT
+    id,
+    cat,
+    subcat,
+    maintenance
+from bronze.erp_px_cat_g1v2 

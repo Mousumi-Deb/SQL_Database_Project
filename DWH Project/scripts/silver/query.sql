@@ -244,4 +244,57 @@ where bdate > '1924-01-01' AND bdate < GETDATE()
 
 
 --- data standardization & consistency
-SELECT DISTINCT gen from bronze.erp_cust_az12;
+SELECT Distinct gen,
+CASE 
+    WHEN UPPER(TRIM(gen)) In ('M', 'MALE') Then 'Male'
+    WHEN UPPER(TRIM(gen)) In ('F', 'FEMALE') Then 'Female'
+    ELSE 'n/a'
+END AS gen 
+from bronze.erp_cust_az12;
+
+
+---data quality check after loading data into silver.erp_cust_az12 table
+SELECT distinct gen from silver.erp_cust_az12
+
+
+
+--- lets query erp location table for data quality issues
+SELECT 
+REPLACE(cid, '-', '') cid,
+Case 
+    when TRIM(cntry) = 'DE' THEN 'Germany'
+    when TRIM(cntry) IN ('US','USA') then 'United States'
+    when TRIM(cntry) = '' OR cntry is NULL THEN 'n/a'
+    ELSE TRIM(cntry)
+END AS cntry
+
+from bronze.erp_loc_a101
+
+
+---data standardization & consistency check
+SELECT distinct cntry
+from silver.erp_loc_a101 ORDER BY cntry;
+
+
+SELECT * from silver .erp_loc_a101;
+
+
+------- erp px category table data quality check
+SELECT 
+    id,
+    cat, 
+    subcat,
+    maintenance
+from bronze.erp_px_cat_g1v2
+
+
+
+---check unwanted spaces in cat
+SELECT*
+from bronze.erp_px_cat_g1v2
+WHERE cat != TRIM(cat) or subcat != TRIM(subcat) or maintenance != TRIM(maintenance)
+
+
+--standardization & consistency check
+SELECT distinct maintenance
+from bronze.erp_px_cat_g1v2

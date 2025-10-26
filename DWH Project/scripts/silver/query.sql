@@ -52,40 +52,7 @@ SELECT DISTINCT cst_gndr from bronze.crm_cust_info;
 ---transformation and then insert data into silver table
 use Datawarehouse;
 GO
--- want to drop IF EXISTS
-
-
-
-INSERT into silver.crm_cust_info (
-    cst_id,
-    cst_key,
-    cst_firstname,
-    cst_lastname,
-    cst_marital_status,
-    cst_gndr,
-    cst_create_date)
-SELECT
-    cst_id,
-    cst_key,
-    TRIM(cst_firstname) AS cst_firstname,
-    TRIM(cst_lastname) AS cst_lastname,
-    CASE 
-        when UPPER(TRIM(cst_marital_status)) = 'M' then 'Married'
-        when UPPER(TRIM(cst_marital_status)) = 'S' then 'Single'
-        Else 'N/A'
-    END AS cst_marital_status,
-    CASE 
-        when UPPER(TRIM(cst_gndr)) = 'M' then 'Male'
-        when UPPER(TRIM(cst_gndr)) = 'F' then 'Female'
-        Else 'N/A'
-    END AS cst_gndr,
-    cst_create_date
-FROM (
-    SELECT 
-    *,
-    ROW_NUMBER() OVER (PARTITION BY cst_id ORDER BY cst_create_date DESC) AS flag_last
-    from bronze.crm_cust_info where cst_id IS NOT NULL) t 
-    WHERE flag_last = 1;
+    
 
 ---check the data in silver table
 SELECT * from silver.crm_cust_info;
@@ -108,3 +75,173 @@ SELECT cst_lastname
 from silver.crm_cust_info
 WHERE cst_lastname != TRIM(cst_lastname)
 
+
+
+
+--============================================== Recheck silver.crm_sales_details table for data quality issues===============================
+---check the invalid date orders
+SELECT * FROM
+silver.crm_sales_details
+WHERE sls_order_dt > sls_ship_dt OR sls_order_dt > sls_due_dt
+
+
+---check the invalid ship date
+select distinct
+sls_sales,
+sls_quantity,
+sls_price
+from silver.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+
+--- FINAL CHECK
+SELECT * from silver.crm_sales_details
+
+
+
+----------------data quality check-(before inserting data into silver product table)------------------
+---check for duplicate prd_id
+Select 
+    sls_prd_key 
+from bronze.crm_sales_details
+where sls_prd_key NOT IN 
+    (SELECT prd_key from silver.crm_prd_info)
+
+SELECT * from bronze.crm_prd_info
+
+-- for split teh data from prd key need to check with bronze category table
+SELECT distinct id from bronze.erp_px_cat_g1v2;
+
+---query for testing data quality issues
+SELECT
+    prd_id,
+    COUNT(*)
+FROM silver.crm_prd_info
+group by prd_id
+HAVING COUNT(*) > 1 OR prd_id IS NULL;
+
+
+----Recheck silver.crm_prd_info table for duplicate prd_id
+SELECT
+    prd_id,
+    COUNT(*)
+FROM silver.crm_prd_info
+group by prd_id
+HAVING COUNT(*) > 1 OR prd_id IS NULL;
+
+
+---check unwanted spaces in prd_nm
+SELECT prd_nm 
+from silver.crm_prd_info
+WHERE prd_nm != TRIM(prd_nm)
+
+---check for NULLs ornegative numbers in prd_cost
+SELECT prd_cost
+from silver.crm_prd_info
+WHERE prd_cost IS NULL OR prd_cost < 0
+
+
+---check for invalid date orders
+SELECT prd_start_dt, prd_end_dt
+from silver.crm_prd_info
+WHERE prd_end_dt IS NOT NULL AND prd_end_dt < prd_start_dt
+
+
+--- FINAL CHECK
+SELECT * from silver.crm_prd_info
+
+
+
+
+-----------------data quality check-(before inserting data into silver sales details table)------------------
+
+select 
+    sls_ord_num,
+    sls_prd_key,
+    sls_cust_id,
+    sls_order_dt,
+    sls_ship_dt,
+    sls_due_dt,
+    sls_sales,
+    sls_quantity,
+    sls_price
+from bronze.crm_sales_details
+
+
+---check the invalid date orders
+SELECT 
+    nullif(sls_order_dt,0) as sls_order_dt
+from bronze.crm_sales_details
+where sls_order_dt <= 0 
+OR Len(sls_order_dt) != 8
+OR sls_order_dt > 20500101
+OR sls_order_dt < 19000101
+
+---check the invalid ship date
+select distinct
+sls_sales,
+sls_quantity,
+sls_price
+from bronze.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+---- transformation option of 3 columns (sls_sales, sls_quantity, sls_price)    
+
+select distinct
+sls_sales as old_sls_sales,
+sls_quantity,
+sls_price as old_sls_price,
+CASE 
+    When sls_sales IS NULL OR sls_sales <= 0 OR sls_sales != sls_quantity * ABS(sls_price) 
+        THEN sls_quantity * ABS(sls_price)
+        ELSE sls_sales
+    END AS sls_sales,
+CASE
+    when sls_price is null or sls_price <= 0
+        THEN sls_sales / NULLIF(sls_quantity, 0)
+        ELSE sls_price
+    END AS sls_price
+from bronze.crm_sales_details
+where sls_sales != sls_quantity * sls_price
+OR sls_sales IS NULL or sls_quantity IS NULL or sls_price IS NULL
+OR sls_sales <= 0 OR sls_quantity <= 0 OR sls_price <= 0
+order by sls_sales, sls_quantity, sls_price;
+
+
+
+----
+use DataWarehouse
+GO
+
+SELECT 
+cid,
+CASE 
+    WHEN cid LIKE 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))
+    ELSE cid
+END AS cid,
+bdate,
+gen
+from bronze.erp_cust_az12
+where CASE 
+    when cid like 'NAS%' THEN SUBSTRING(cid, 4, LEN(cid))
+    ELSE cid
+END NOT IN (SELECT DISTINCT cst_key FROM silver.crm_cust_info)
+
+
+
+--- IDENTIFY OUT OD RANGE DATES
+
+SELECT 
+bdate
+from bronze.erp_cust_az12
+where bdate > '1924-01-01' AND bdate < GETDATE()
+
+
+--- data standardization & consistency
+SELECT DISTINCT gen from bronze.erp_cust_az12;

@@ -298,3 +298,11 @@ WHERE cat != TRIM(cat) or subcat != TRIM(subcat) or maintenance != TRIM(maintena
 --standardization & consistency check
 SELECT distinct maintenance
 from bronze.erp_px_cat_g1v2
+
+-- silver loading procedure execution
+USE Datawarehouse
+exec silver.load_silver
+go
+--- EXEC bronze.load_bronze
+exec bronze.load_bronze
+GO

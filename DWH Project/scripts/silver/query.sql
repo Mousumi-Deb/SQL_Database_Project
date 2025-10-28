@@ -75,7 +75,7 @@ SELECT cst_lastname
 from silver.crm_cust_info
 WHERE cst_lastname != TRIM(cst_lastname)
 
-
+--SELECT cst_key from silver.crm_cust_info
 
 
 --============================================== Recheck silver.crm_sales_details table for data quality issues===============================
@@ -301,8 +301,28 @@ from bronze.erp_px_cat_g1v2
 
 -- silver loading procedure execution
 USE Datawarehouse
-exec silver.load_silver
+--exec silver.load_silver
 go
 --- EXEC bronze.load_bronze
 exec bronze.load_bronze
 GO
+
+
+----- GOldLayer-----
+
+-- checking data interation
+
+SELECT Distinct
+    ci.cst_gndr,
+    ca.gen,
+    case 
+        when ci.cst_gndr != 'n/a' then ci.cst_gndr  --- crm is the  master for gender info  
+        Else coalesce(ca.gen,'n/a')
+    END as new_gen
+
+FROM silver.crm_cust_info ci
+left join silver.erp_cust_az12 ca  
+    on ci.cst_key = ca.cid
+LEFT JOIN silver.erp_loc_a101 la  
+    on ci.cst_key = la.cid
+ORDER BY 1, 2

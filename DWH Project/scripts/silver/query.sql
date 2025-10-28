@@ -326,3 +326,58 @@ left join silver.erp_cust_az12 ca
 LEFT JOIN silver.erp_loc_a101 la  
     on ci.cst_key = la.cid
 ORDER BY 1, 2
+
+
+--- quality of gold data
+-- select distinct gender from gold.dim_customers
+-- select* from gold.dim_customers
+
+--- creating the dim gold tables
+
+SELECT 
+ROW_NUMBER() over( order by pn.prd_start_dt, pn.prd_key)as product_key,
+    pn.prd_id as product_id,
+    pn.prd_key as product_number,
+    pn.prd_nm as product_name,
+    pn.cat_id as category_id,
+    pc.cat as category,
+    pc.subcat as subcategory,
+    pc.maintenance,
+    pn.prd_cost as cost,
+    pn.prd_line as product_line,
+    pn.prd_start_dt as start_date
+FROM silver.crm_prd_info pn
+LEFT JOIN silver.erp_px_cat_g1v2 pc  
+    ON pn.cat_id = pc.id
+WHERE prd_end_dt is NULL   --- filter out all historical data 
+
+--- checking the dim data--
+-- SELECT * from gold.dim_products
+
+-- building the Fact tabels---------
+--- use the dimentions surragate keys instead of ids to easily connect facts with dimentions
+
+SELECT
+    sd.sls_ord_num as order_number,
+    pr.product_key,
+    cu.customer_key,
+    sd.sls_order_dt as order_date,
+    sd.sls_ship_dt as shipping_date,
+    sd.sls_due_dt as due_date,
+    sd.sls_sales as sales_amount,
+    sd.sls_quantity as quantity,
+    sd.sls_price as price
+FROM silver.crm_sales_details as sd
+LEFT JOIN gold.dim_products pr  
+ ON sd.sls_prd_key = pr.product_number
+LEFT JOIN gold.dim_customers cu  
+ ON sd.sls_cust_id = cu.customer_id;
+ 
+
+ --- checking the gold layers facts tables data
+ SELECT * FROM gold.fact_sales f  
+ LEFT JOIN gold.dim_customers c  
+    ON c.customer_key  = f.customer_key
+LEFT JOIN gold.dim_products p  
+    ON p.product_key  = f.product_key
+where p.product_key IS NULL 
